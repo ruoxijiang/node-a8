@@ -1,1 +1,4 @@
-# node-a8
+# Node-A8
+## Install
+`npm install`
+## Run

@@ -1,0 +1,49 @@
+{
+  "name": "node-a8",
+  "version": "1.0.0",
+  "description": "Node addon for a8",
+  "main": "lib/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "install": "npm run release-native",
+    "release-native": "rm -rf ./build && cmake-js build -O ./build --cxx -d .",
+    "rebuild-native": "rm -rf ./build && npm run build-native",
+    "build-native": "cmake-js build -O ./build --cxx --CDAUTHOR=\"Edison\" -d ..",
+    "test": "mocha --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruoxijiang/node-a8.git"
+  },
+  "keywords": [
+    "node"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/ruoxijiang/node-a8/issues"
+  },
+  "homepage": "https://github.com/ruoxijiang/node-a8#readme",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^10.1.0",
+    "babel-preset-electron": "^1.4.15",
+    "chai": "^4.2.0",
+    "cmake-js": "^6.1.0",
+    "eslint": "^7.17.0",
+    "eslint-config-prettier": "^6.15.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-prettier": "^3.1.4",
+    "eslint-plugin-spellcheck": "^0.0.17",
+    "eslint_d": "^9.1.2",
+    "mocha": "^8.1.1",
+    "prettier": "^2.2.1"
+  },
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "node-addon-api": "^3.1.0"
+  }
+}
