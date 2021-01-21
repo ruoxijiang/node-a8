@@ -107,3 +107,4 @@ build
 test/data
 .idea
 cmake-build-debug
+**/.DS_Store
