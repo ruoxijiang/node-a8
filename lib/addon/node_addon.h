@@ -10,10 +10,12 @@
 #include <a8/spider/linkedin_spider.hpp>
 #include <napi.h>
 
-#define NODE_HEADER_CHECK 0
-#define NODE_EMAIL_CHECK 1
-#define NODE_LINKED_PROFILE_FETCH 2
-#define NODE_SPAM_CHECK 3
+enum commands {
+    NODE_HEADER_CHECK = 0,
+    NODE_EMAIL_CHECK = 1,
+    NODE_LINKED_PROFILE_FETCH = 2,
+    NODE_SPAM_CHECK = 3
+};
 
 class NodeCheckCB : public a8::CheckCB {
 public:
@@ -75,6 +77,7 @@ private:
 
     int command = 0;
     int max_wait_seconds = 90;
+    const int totalSpamChecks = 70;
     a8::CheckResult output_CheckResult;
     a8::LinkedInProfile output_LinkedInProfile;
     a8::EmailInfo input_EmailInfo;
@@ -86,7 +89,7 @@ private:
     Napi::FunctionReference progressCallback;
     Napi::FunctionReference errorCallback;
     int output_simpleCheckResult = 0;
-    bool spamCheckInProgress = false;
+    int spamCheckInCBCount = 0;
 };
 
 #endif //A8_NODE_ADDON_H

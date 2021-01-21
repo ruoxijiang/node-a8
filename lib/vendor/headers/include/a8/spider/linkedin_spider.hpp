@@ -56,7 +56,7 @@ namespace a8 {
 
         LinkedInSpider(SearchEngine searchEngine);
 
-        LinkedInProfile FetchLinkedInProfile(LinkedInQueryParam queryParam);
+        LinkedInProfile FetchLinkedInProfile(LinkedInQueryParam queryParam, const int curl_timeout = 8L);
 
         bool ParseLinkedInInfo(const SearchCase &searchCase, LinkedInProfile &profile);
 

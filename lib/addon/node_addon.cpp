@@ -19,7 +19,16 @@ NodeCheckCB::NodeCheckCB(const Napi::AsyncProgressQueueWorker<a8::OnlineResult>:
 NodeCheckCB::~NodeCheckCB() {}
 
 void NodeCheckCB::OnResult(std::shared_ptr<OnlineResult> result) {
-    this->progress.Send(result.get(), 1);
+    if (result) {
+        this->progress.Send(result.get(), 1);
+    } else {
+        OnlineResult *tmp;
+        tmp->code = 1;
+        tmp->type = "runtimeError";
+        this->progress.Send(tmp, 1);
+        delete tmp;
+        tmp = nullptr;
+    }
 //    if (result->type == "dbl" || result->type == "dbl2") {
 //        this->dbl2Count++;
 //        return;
@@ -128,22 +137,22 @@ void NodeAddon::ParseJSReplyTo(const Napi::String &replyTo) {
 }
 
 void NodeAddon::ParseJSLinkedInQueryParam(const Napi::Object &linkedInQueryParam) {
-    if(linkedInQueryParam.Has("name")){
-      this->input_LinkedInQueryParam.name = linkedInQueryParam.Get("name").As<String>();
+    if (linkedInQueryParam.Has("name")) {
+        this->input_LinkedInQueryParam.name = linkedInQueryParam.Get("name").As<String>();
     }
-    if(linkedInQueryParam.Has("email")){
+    if (linkedInQueryParam.Has("email")) {
         this->input_LinkedInQueryParam.email = linkedInQueryParam.Get("email").As<String>();
     }
-    if(linkedInQueryParam.Has("organization")){
+    if (linkedInQueryParam.Has("organization")) {
         this->input_LinkedInQueryParam.organization = linkedInQueryParam.Get("organization").As<String>();
     }
-    if(linkedInQueryParam.Has("organizationSource")){
+    if (linkedInQueryParam.Has("organizationSource")) {
         this->input_LinkedInQueryParam.organizationSource = linkedInQueryParam.Get("organizationSource").As<String>();
     }
-    if(linkedInQueryParam.Has("title")){
-        this->input_LinkedInQueryParam.title= linkedInQueryParam.Get("title").As<String>();
+    if (linkedInQueryParam.Has("title")) {
+        this->input_LinkedInQueryParam.title = linkedInQueryParam.Get("title").As<String>();
     }
-    if(linkedInQueryParam.Has("owner")){
+    if (linkedInQueryParam.Has("owner")) {
         this->input_LinkedInQueryParam.owner = linkedInQueryParam.Get("owner").As<String>();
     }
 }
@@ -207,16 +216,16 @@ void NodeAddon::SpamCheck(const Napi::AsyncProgressQueueWorker<a8::OnlineResult>
     auto cb = std::make_shared<NodeCheckCB>(progress);
     int retries = 0;
     checker.CheckAsync(this->input_emailAddress, this->input_ReplyTo, cb);
-    this->spamCheckInProgress = true;
+    this->spamCheckInCBCount = 0;
     printf("Entering spamCheck loop, max wait %i\n", this->max_wait_seconds);
-    while (this->spamCheckInProgress && (retries < this->max_wait_seconds)) {
+    while (this->spamCheckInCBCount < this->totalSpamChecks && (retries < this->max_wait_seconds)) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         retries++;
     }
     if (retries >= this->max_wait_seconds) {
         SetError("Max wait periods exceeded.");
     }
-    this->spamCheckInProgress = false;
+    this->spamCheckInCBCount = 0;
     printf("SpamCheck loop exited\n");
 }
 
@@ -230,7 +239,7 @@ void NodeAddon::Execute(const ExecutionProgress &progress) {
     } else if (this->command == NODE_SPAM_CHECK) {
         printf("Executing SpamCheck\n");
         SpamCheck(progress);
-    } else if (this->command == NODE_LINKED_PROFILE_FETCH){
+    } else if (this->command == NODE_LINKED_PROFILE_FETCH) {
         printf("Executing FetchLinkedInProfile\n");
         FetchLinkedInProfile();
     }
@@ -251,7 +260,7 @@ void NodeAddon::OnOK() {
     } else if (this->command == NODE_SPAM_CHECK) {
         printf("SpamCheck complete\n");
         Callback().Call({Env().Null()});
-    } else if (this->command == NODE_LINKED_PROFILE_FETCH){
+    } else if (this->command == NODE_LINKED_PROFILE_FETCH) {
         printf("Fetch LinkedinProfile complete\n");
         Object result = Object::New(Env());
         LinkedInProfileToJS(this->output_LinkedInProfile, result);
@@ -270,14 +279,19 @@ void NodeAddon::OnError(const Error &error) {
 
 void NodeAddon::OnProgress(const a8::OnlineResult *onlineResult, size_t count) {
     HandleScope scope(Env());
+    if(onlineResult == nullptr || this->command !=NODE_SPAM_CHECK){
+        return;
+    }
+    this->spamCheckInCBCount++;
     if (!this->progressCallback.IsEmpty()) {
         Object ret = Object::New(Env());
+        ret.Set(String::New(Env(), "currentCBCount"), Number::New(Env(), this->spamCheckInCBCount));
+        ret.Set(String::New(Env(), "total"), Number::New(Env(), this->totalSpamChecks));
         OnlineResultToJS(*onlineResult, ret);
         this->progressCallback.Call(Receiver().Value(), {ret});
     }
-    if (onlineResult->domain == "end") {
+    if (this->spamCheckInCBCount >= this->totalSpamChecks) {
         printf("Spam check progress indicates finished\n");
-        this->spamCheckInProgress = false;
     }
 
 }
